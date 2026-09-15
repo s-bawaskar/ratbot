@@ -1,0 +1,10 @@
+[
+  {"key": "first_catch", "name": "First Catch", "description": "Catch your first Mushak.", "type": "catches_total", "value": 1, "reward_modaks": 100},
+  {"key": "modak_hoarder", "name": "Modak Hoarder", "description": "Hold 50,000 Modaks at once.", "type": "modaks_total", "value": 50000, "reward_modaks": 0},
+  {"key": "rat_king", "name": "Rat King", "description": "Collect 10 unique Mushaks.", "type": "unique_rats", "value": 10, "reward_modaks": 500},
+  {"key": "lucky_bastard", "name": "Lucky Bastard", "description": "Catch a Legendary Mushak.", "type": "catch_rarity", "rarity": "legendary", "reward_modaks": 300},
+  {"key": "divine_find", "name": "Divine Find", "description": "Catch a Divine Mushak.", "type": "catch_rarity", "rarity": "divine", "reward_modaks": 1000},
+  {"key": "devotee", "name": "Devotee", "description": "Perform 20 Aartis.", "type": "aartis_total", "value": 20, "reward_modaks": 400},
+  {"key": "quick_draw", "name": "Quick Draw", "description": "Catch a Mushak within 3 seconds of it spawning.", "type": "catch_speed_under", "value": 3, "reward_modaks": 250},
+  {"key": "better_late_than_never", "name": "Better Late Than Never", "description": "Catch a Mushak that had been sitting uncaught for an hour or more.", "type": "catch_speed_over", "value": 3600, "reward_modaks": 250}
+]
