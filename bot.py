@@ -64,6 +64,13 @@ async def on_ready() -> None:
         _synced_once = True
 
 
+@bot.event
+async def on_guild_join(guild: discord.Guild) -> None:
+    bot.tree.copy_global_to(guild=guild)
+    await bot.tree.sync(guild=guild)
+    logger.info("Joined guild %s (%s), synced commands", guild.name, guild.id)
+
+
 @bot.tree.error
 async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError) -> None:
     if isinstance(error, app_commands.MissingPermissions):
