@@ -1,12 +1,11 @@
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 
 import discord
 from discord import app_commands
 from discord.ext import commands
 
-import permissions
+import cooldowns
 from achievements_engine import check_achievements
-from database import Cooldown
 from economy import add_modaks, get_wallet
 
 DAILY_AMOUNT = 500
@@ -23,22 +22,12 @@ class Wallet(commands.Cog):
         await interaction.response.defer()
         user_id, guild_id = interaction.user.id, interaction.guild.id
 
-        if not permissions.is_owner(user_id):
-            cd = await Cooldown.get_or_none(user_id=user_id, guild_id=guild_id, command_key="daily")
-            now = datetime.now(timezone.utc)
-            if cd and cd.expires_at > now:
-                remaining = cd.expires_at - now
-                hours, rem = divmod(int(remaining.total_seconds()), 3600)
-                minutes = rem // 60
-                await interaction.followup.send(f"⏳ You already claimed your daily. Come back in {hours}h {minutes}m.", ephemeral=True)
-                return
-
-            new_expiry = now + DAILY_COOLDOWN
-            if cd:
-                cd.expires_at = new_expiry
-                await cd.save()
-            else:
-                await Cooldown.create(user_id=user_id, guild_id=guild_id, command_key="daily", expires_at=new_expiry)
+        remaining = await cooldowns.check(user_id, guild_id, "daily", DAILY_COOLDOWN)
+        if remaining:
+            await interaction.followup.send(
+                f"⏳ You already claimed your daily. Come back in {cooldowns.format_remaining(remaining)}.", ephemeral=True
+            )
+            return
 
         await add_modaks(user_id, guild_id, DAILY_AMOUNT, "daily")
         await interaction.followup.send(f"🍥 You received **{DAILY_AMOUNT} Modaks**!\n🙏 Your devotion has been rewarded.")

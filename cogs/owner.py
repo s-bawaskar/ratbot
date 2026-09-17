@@ -43,7 +43,7 @@ class Owner(commands.Cog):
 
     @ownergiverat.autocomplete("rat")
     async def rat_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
-        return [app_commands.Choice(name=r["name"], value=r["id"]) for r in rats.search(current)]
+        return await rats.autocomplete(interaction, current)
 
 
 async def setup(bot: commands.Bot) -> None:

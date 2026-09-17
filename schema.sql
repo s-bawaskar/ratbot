@@ -79,6 +79,7 @@ CREATE TABLE IF NOT EXISTS catches (
     caught_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+CREATE INDEX IF NOT EXISTS idx_channels_due_spawn ON channels (next_spawn_at) WHERE enabled AND current_spawn_msg_id IS NULL;
 CREATE INDEX IF NOT EXISTS idx_catches_guild_speed ON catches (guild_id, catch_seconds);
 CREATE INDEX IF NOT EXISTS idx_wallets_guild_modaks ON wallets (guild_id, modaks DESC);
 CREATE INDEX IF NOT EXISTS idx_user_rats_guild_user ON user_rats (guild_id, user_id);

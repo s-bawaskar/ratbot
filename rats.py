@@ -2,6 +2,9 @@ import json
 import random
 from pathlib import Path
 
+import discord
+from discord import app_commands
+
 RARITY_ORDER = ["common", "uncommon", "rare", "epic", "legendary", "mythic", "devotional", "divine", "secret"]
 
 RARITY_EMOJI = {
@@ -64,6 +67,11 @@ def search(current: str, limit: int = 25) -> list[dict]:
     """Rat species whose name contains `current` (case-insensitive), for autocomplete."""
     current_lower = current.lower()
     return [r for r in RATS.values() if current_lower in r["name"].lower()][:limit]
+
+
+async def autocomplete(interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
+    """Shared autocomplete callback for any `rat` command option."""
+    return [app_commands.Choice(name=r["name"], value=r["id"]) for r in search(current)]
 
 
 def rarity_rank(rarity: str) -> int:

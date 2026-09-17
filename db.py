@@ -61,7 +61,7 @@ class Model:
         self.__values: dict[str, Any] = dict(record.items())
 
     def __setattr__(self, name: str, value: Any) -> None:
-        if name.startswith("_Model__") or name.startswith("_"):
+        if name.startswith("_"):
             return super().__setattr__(name, value)
         if name not in self.__values:
             raise KeyError(name)

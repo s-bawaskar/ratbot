@@ -26,11 +26,6 @@ class Transaction(db.Model):
     _pk = ("id",)
 
 
-class Cooldown(db.Model):
-    _table = "cooldowns"
-    _pk = ("user_id", "guild_id", "command_key")
-
-
 class UserAchievement(db.Model):
     _table = "user_achievements"
     _pk = ("user_id", "guild_id", "achievement_key")

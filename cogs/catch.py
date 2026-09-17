@@ -39,7 +39,14 @@ class Catch(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
         self.spawning: set[int] = set()
+        # channels with a currently-active spawn, mirrored from the DB so on_message doesn't
+        # need a query per chat message just to check this
+        self.active_spawn_channels: set[int] = set()
         self.spawn_loop.start()
+
+    async def cog_load(self) -> None:
+        rows = await db._get_pool().fetch("SELECT channel_id FROM channels WHERE current_spawn_msg_id IS NOT NULL")
+        self.active_spawn_channels = {row["channel_id"] for row in rows}
 
     def cog_unload(self) -> None:
         self.spawn_loop.cancel()
@@ -74,6 +81,7 @@ class Catch(commands.Cog):
             await interaction.followup.send("This channel isn't set up.", ephemeral=True)
             return
         await channel.delete()
+        self.active_spawn_channels.discard(interaction.channel_id)
         await interaction.followup.send("Spawning stopped in this channel.")
 
     @app_commands.command(description="(ADMIN) Force a Mushak to spawn immediately in this channel")
@@ -108,7 +116,7 @@ class Catch(commands.Cog):
 
     @forcespawn.autocomplete("rat")
     async def forcespawn_rat_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
-        return [app_commands.Choice(name=r["name"], value=r["id"]) for r in rats.search(current)]
+        return await rats.autocomplete(interaction, current)
 
     @app_commands.command(description="(ADMIN) Change how often Mushaks spawn in this channel, in seconds")
     @app_commands.describe(min_seconds="Minimum seconds between spawns", max_seconds="Maximum seconds between spawns")
@@ -169,6 +177,7 @@ class Catch(commands.Cog):
         except (discord.NotFound, discord.Forbidden):
             log.warning("channel %s no longer accessible, removing its spawn config", channel_id)
             await db._get_pool().execute("DELETE FROM channels WHERE channel_id = $1", channel_id)
+            self.active_spawn_channels.discard(channel_id)
             return
         rat = forced_rat or rats.weighted_spawn()
         log.info("spawning: channel=%s rat_id=%r rat_name=%r", channel_id, rat.get("id"), rat.get("name"))
@@ -190,6 +199,7 @@ class Catch(commands.Cog):
             _random_delay(min_s, max_s),
             channel_id,
         )
+        self.active_spawn_channels.add(channel_id)
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
@@ -200,15 +210,9 @@ class Catch(commands.Cog):
         content = message.content.strip().lower()
 
         if content != config.CATCH_TRIGGER_WORD:
-            if not content:
+            if not content or message.channel.id not in self.active_spawn_channels:
                 return
             try:
-                pool = db._get_pool()
-                spawn_active = await pool.fetchval(
-                    "SELECT current_spawn_msg_id IS NOT NULL FROM channels WHERE channel_id = $1", message.channel.id
-                )
-                if not spawn_active:
-                    return
                 if content == "cat":
                     await message.reply("😹 You thought it was me huh?", mention_author=False)
                 else:
@@ -232,6 +236,7 @@ class Catch(commands.Cog):
                 "RETURNING claimed.current_rat_key, claimed.current_spawn_msg_id, claimed.current_spawn_at",
                 message.channel.id,
             )
+            self.active_spawn_channels.discard(message.channel.id)
             if row is None:
                 # either no spawn is active, or someone else already claimed it a moment earlier
                 try:

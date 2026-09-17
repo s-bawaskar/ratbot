@@ -39,10 +39,6 @@ CATEGORIES = {
 }
 
 
-async def rat_autocomplete(interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
-    return [app_commands.Choice(name=r["name"], value=r["id"]) for r in rats.search(current)]
-
-
 class Leaderboard(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
@@ -50,7 +46,7 @@ class Leaderboard(commands.Cog):
     @app_commands.command(description="View the server leaderboards")
     @app_commands.describe(rat="Optional: rank by who has the most of a specific Mushak species")
     @app_commands.choices(category=[app_commands.Choice(name=v[0], value=k) for k, v in CATEGORIES.items()])
-    @app_commands.autocomplete(rat=rat_autocomplete)
+    @app_commands.autocomplete(rat=rats.autocomplete)
     async def leaderboard(self, interaction: discord.Interaction, category: str = "richest", rat: str | None = None) -> None:
         assert interaction.guild is not None
         await interaction.response.defer()

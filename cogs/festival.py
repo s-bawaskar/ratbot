@@ -1,39 +1,14 @@
 import random
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 
 import discord
 from discord import app_commands
 from discord.ext import commands
 
-import permissions
+import cooldowns
 from achievements_engine import check_achievements
-from database import Cooldown, FestivalProgress
+from database import FestivalProgress
 from economy import add_modaks
-
-
-async def _check_cooldown(user_id: int, guild_id: int, key: str, duration: timedelta) -> timedelta | None:
-    """Returns remaining time if still on cooldown, else sets a new cooldown and returns None.
-    The bot owner bypasses cooldowns entirely."""
-    if permissions.is_owner(user_id):
-        return None
-    cd = await Cooldown.get_or_none(user_id=user_id, guild_id=guild_id, command_key=key)
-    now = datetime.now(timezone.utc)
-    if cd and cd.expires_at > now:
-        return cd.expires_at - now
-    new_expiry = now + duration
-    if cd:
-        cd.expires_at = new_expiry
-        await cd.save()
-    else:
-        await Cooldown.create(user_id=user_id, guild_id=guild_id, command_key=key, expires_at=new_expiry)
-    return None
-
-
-def _fmt(remaining: timedelta) -> str:
-    total = int(remaining.total_seconds())
-    h, rem = divmod(total, 3600)
-    m = rem // 60
-    return f"{h}h {m}m" if h else f"{m}m"
 
 
 async def _get_progress(user_id: int, guild_id: int) -> FestivalProgress:
@@ -59,9 +34,9 @@ class Festival(commands.Cog):
         assert interaction.guild is not None
         await interaction.response.defer()
         user_id, guild_id = interaction.user.id, interaction.guild.id
-        remaining = await _check_cooldown(user_id, guild_id, "puja", timedelta(hours=1))
+        remaining = await cooldowns.check(user_id, guild_id, "puja", timedelta(hours=1))
         if remaining:
-            await interaction.followup.send(f"🙏 You already performed Puja. Come back in {_fmt(remaining)}.", ephemeral=True)
+            await interaction.followup.send(f"🙏 You already performed Puja. Come back in {cooldowns.format_remaining(remaining)}.", ephemeral=True)
             return
 
         progress = await _get_progress(user_id, guild_id)
@@ -77,9 +52,9 @@ class Festival(commands.Cog):
         assert interaction.guild is not None
         await interaction.response.defer()
         user_id, guild_id = interaction.user.id, interaction.guild.id
-        remaining = await _check_cooldown(user_id, guild_id, "aarti", timedelta(hours=6))
+        remaining = await cooldowns.check(user_id, guild_id, "aarti", timedelta(hours=6))
         if remaining:
-            await interaction.followup.send(f"🪔 You already performed Aarti. Come back in {_fmt(remaining)}.", ephemeral=True)
+            await interaction.followup.send(f"🪔 You already performed Aarti. Come back in {cooldowns.format_remaining(remaining)}.", ephemeral=True)
             return
 
         progress = await _get_progress(user_id, guild_id)
@@ -95,9 +70,9 @@ class Festival(commands.Cog):
         assert interaction.guild is not None
         await interaction.response.defer()
         user_id, guild_id = interaction.user.id, interaction.guild.id
-        remaining = await _check_cooldown(user_id, guild_id, "prasad", timedelta(hours=3))
+        remaining = await cooldowns.check(user_id, guild_id, "prasad", timedelta(hours=3))
         if remaining:
-            await interaction.followup.send(f"🥥 You already received Prasad. Come back in {_fmt(remaining)}.", ephemeral=True)
+            await interaction.followup.send(f"🥥 You already received Prasad. Come back in {cooldowns.format_remaining(remaining)}.", ephemeral=True)
             return
 
         progress = await _get_progress(user_id, guild_id)
