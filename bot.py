@@ -45,17 +45,27 @@ async def setup_hook() -> None:
 
 
 _synced_once = False
+# snapshot of the globally-registered commands, taken before clear_commands(guild=None)
+# wipes the tree's in-memory global registry below — on_guild_join needs this to
+# copy commands into guilds joined after startup.
+_global_commands: list[app_commands.Command | app_commands.Group] = []
+
+
+def _copy_snapshot_to_guild(guild: discord.Guild) -> None:
+    for cmd in _global_commands:
+        bot.tree.add_command(cmd, guild=guild, override=True)
 
 
 @bot.event
 async def on_ready() -> None:
-    global _synced_once
+    global _synced_once, _global_commands
     logger.info("Logged in as %s (%s)", bot.user, bot.user.id if bot.user else "?")
     if not _synced_once:
         # dev mode: sync per-guild only (instant), and wipe any stray global
         # registration from earlier so commands don't show up duplicated.
+        _global_commands = list(bot.tree.get_commands())
         for guild in bot.guilds:
-            bot.tree.copy_global_to(guild=guild)
+            _copy_snapshot_to_guild(guild)
         bot.tree.clear_commands(guild=None)
         await bot.tree.sync()
         for guild in bot.guilds:
@@ -66,7 +76,7 @@ async def on_ready() -> None:
 
 @bot.event
 async def on_guild_join(guild: discord.Guild) -> None:
-    bot.tree.copy_global_to(guild=guild)
+    _copy_snapshot_to_guild(guild)
     await bot.tree.sync(guild=guild)
     logger.info("Joined guild %s (%s), synced commands", guild.name, guild.id)
 
