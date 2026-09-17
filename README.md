@@ -42,7 +42,7 @@ festival rituals (Puja, Aarti, Prasad).
 | `/ownergive`, `/ownergiverat` | (Owner) grant Modaks or a specific Mushak |
 
 Admin commands require the "Manage Server" permission (or the bot owner). Owner commands are
-restricted to a single hardcoded Discord user ID.
+restricted to whichever Discord user ID is set as `OWNER_ID` for that deployment (see Setup below).
 
 ## Requirements
 
@@ -64,9 +64,9 @@ restricted to a single hardcoded Discord user ID.
    ```
    DISCORD_TOKEN=your-bot-token
    DATABASE_URL=postgresql://user:password@host/dbname
+   OWNER_ID=your-discord-user-id
    ```
-4. Set your Discord user ID as the bot owner in [config.py](config.py) (`OWNER_ID`).
-5. Run the bot:
+4. Run the bot:
    ```
    python bot.py
    ```
